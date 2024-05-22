@@ -1,0 +1,11 @@
+debug/
+target/
+**/*.rs.bk
+*.pdb
+.vscode/
+.idea/
+.DS_Store
+**/*.log
+perf.data
+perf.data.old
+flamegraph.svg

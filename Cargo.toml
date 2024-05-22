@@ -1,0 +1,17 @@
+[package]
+name = "reth-7702-sandbox"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+# reth dependencies
+reth = { path = "../reth/bin/reth" }
+reth-node-core = { path = "../reth/crates/node-core" }
+reth-node-ethereum = { path = "../reth/crates/ethereum/node" }
+reth-primitives = { path = "../reth/crates/primitives" }
+
+# external dependencies
+eyre = { version = "0.6.12", features = [] }
+futures-util = { version = "0.3.30", features = [] }
+serde_json = { version = "1.0.117", features = [] }
+tokio = { version = "1.37.0", default-features = false }
