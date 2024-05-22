@@ -16,9 +16,15 @@
 use futures_util::StreamExt;
 use reth::{
     builder::{NodeBuilder, NodeHandle},
+    primitives::IntoRecoveredTransaction,
     providers::CanonStateSubscriptions,
-    rpc::eth::EthTransactions,
+    rpc::{
+        compat::transaction::transaction_to_call_request,
+        eth::EthTransactions,
+        types::trace::{parity::TraceType, tracerequest::TraceCallRequest},
+    },
     tasks::TaskManager,
+    transaction_pool::TransactionPool,
 };
 use reth_node_core::{args::RpcServerArgs, node_config::NodeConfig};
 use reth_node_ethereum::EthereumNode;
@@ -43,6 +49,29 @@ async fn main() -> eyre::Result<()> {
         .node(EthereumNode::default())
         .launch()
         .await?;
+
+    let mut pending_transactions =
+        node.pool.new_pending_pool_transactions_listener();
+
+    let traceapi = node.rpc_registry.trace_api();
+
+    _ = node.task_executor.spawn(Box::pin(async move {
+        while let Some(event) = pending_transactions.next().await {
+            let tx = event.transaction;
+            println!("transaction received: {tx:#?}");
+
+            let callrequest =
+                transaction_to_call_request(tx.to_recovered_transaction());
+            let tracerequest = TraceCallRequest::new(callrequest)
+                .with_trace_type(TraceType::Trace);
+            if let Ok(trace_result) = traceapi.trace_call(tracerequest).await {
+                let hash = tx.hash();
+                println!(
+                    "trace result for transaction {hash}: {trace_result:#?}"
+                );
+            }
+        }
+    }));
 
     let mut notifications = node.provider.canonical_state_stream();
 
